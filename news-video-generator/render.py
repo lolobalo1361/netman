@@ -46,7 +46,7 @@ def rss(q,n):
 def og(url):
  try:
   page=get(url,15).text[:1500000]
-  for pat in [r'<meta[^>]+property=["\\']og:image["\\'][^>]+content=["\\']([^"\\']+)',r'<meta[^>]+content=["\\']([^"\\']+)["\\'][^>]+property=["\\']og:image']:
+  for pat in [r"<meta[^>]+property=['\"]og:image['\"][^>]+content=['\"]([^'\"]+)", r"<meta[^>]+content=['\"]([^'\"]+)['\"][^>]+property=['\"]og:image"]:
    m=re.search(pat,page,re.I)
    if m: return html.unescape(m.group(1))
  except Exception: pass
