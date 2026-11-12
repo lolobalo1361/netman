@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import quote,urlparse
 import requests
 from PIL import Image,ImageDraw,ImageFont,ImageOps
-from gtts import gTTS
+
 
 ROOT=Path(__file__).resolve().parent
 OUT=ROOT/"output"; OUT.mkdir(exist_ok=True)
@@ -118,7 +118,7 @@ def main():
   tmp=Path(td); clips=[]
   for i,sc in enumerate(scenes,1):
    pic=scene(sc,i,len(scenes),tmp); audio=tmp/f"voice{i:02d}.mp3"
-   gTTS(text=sc["section"]+". "+sc["title"]+". "+sc.get("body",""),lang="fa").save(str(audio))
+   subprocess.run(["edge-tts","--voice","fa-IR-DilaraNeural","--text",sc["section"]+". "+sc["title"]+". "+sc.get("body",""),"--write-media",str(audio)],check=True)
    clip=tmp/f"clip{i:02d}.mp4"
    subprocess.run(["ffmpeg","-y","-loglevel","error","-loop","1","-i",str(pic),"-i",str(audio),"-vf","scale=1080:1920,format=yuv420p","-c:v","libx264","-preset","veryfast","-tune","stillimage","-c:a","aac","-b:a","128k","-shortest","-movflags","+faststart",str(clip)],check=True)
    clips.append(clip)
@@ -127,7 +127,7 @@ def main():
   subprocess.run(["ffmpeg","-y","-loglevel","error","-f","concat","-safe","0","-i",str(listing),"-c","copy","-movflags","+faststart",str(final)],check=True)
  (OUT/"sources.txt").write_text("\\n".join(x["link"] for x in crypto+iran+fx),encoding="utf-8")
  print("VIDEO_READY",final); print("SCENES",len(scenes)); print("SIZE_BYTES",final.stat().st_size)
- token=os.getenv("TELEGRAM_BOT_TOKEN"); chat=os.getenv("TELEGRAM_CHAT_ID","-1001523446411")
+ token=os.getenv("TELEGRAM_BOT_TOKEN"); chat=os.getenv("TELEGRAM_CHAT_ID") or "-1001523446411"
  if token:
   with final.open("rb") as f:
    r=S.post(f"https://api.telegram.org/bot{token}/sendVideo",data={"chat_id":chat,"caption":f"گزارش ویدئویی نت‌من | {now}\\nکریپتو، دلار آزاد و خبرهای ایران","supports_streaming":"true"},files={"video":("netman-persian-news.mp4",f,"video/mp4")},timeout=240)
