@@ -101,6 +101,35 @@ def scene(sc,idx,total,tmp):
  y=draw(d,sc["title"],W-90,y,fnt(53,True),WHITE,900,22)+25
  draw(d,sc.get("body",""),W-90,y,fnt(38),MUTED,900,18)
  p=tmp/f"scene{idx:02d}.png"; im.save(p); return p
+def narration(text, output):
+ """Prefer expressive multilingual TTS when configured; keep a slower Persian neural fallback."""
+ api_key=os.getenv("ELEVENLABS_API_KEY")
+ voice_id=os.getenv("ELEVENLABS_VOICE_ID")
+ if api_key and voice_id:
+  try:
+   response=S.post(
+    f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128",
+    headers={"xi-api-key":api_key,"Content-Type":"application/json","Accept":"audio/mpeg"},
+    json={
+     "text":text,
+     "model_id":"eleven_multilingual_v2",
+     "voice_settings":{"stability":0.42,"similarity_boost":0.78,"style":0.25,"use_speaker_boost":True}
+    },
+    timeout=120
+   )
+   response.raise_for_status()
+   output.write_bytes(response.content)
+   if output.stat().st_size>1000:
+    print("TTS_ENGINE=ElevenLabs")
+    return
+  except Exception as e:
+   print("ELEVENLABS_TTS_ERROR",str(e)[:300],"; falling back to Edge TTS")
+ subprocess.run([
+  "edge-tts","--voice","fa-IR-FaridNeural","--rate=-8%","--pitch=-2Hz",
+  "--text",text,"--write-media",str(output)
+ ],check=True)
+ print("TTS_ENGINE=EdgeTTS-FaridNeural")
+
 def main():
  crypto=rss("bitcoin OR ethereum OR cryptocurrency when:6h",4)
  iran=rss("Iran conflict OR Iran war OR Iran attack when:1d",4)
@@ -118,7 +147,8 @@ def main():
   tmp=Path(td); clips=[]
   for i,sc in enumerate(scenes,1):
    pic=scene(sc,i,len(scenes),tmp); audio=tmp/f"voice{i:02d}.mp3"
-   subprocess.run(["edge-tts","--voice","fa-IR-DilaraNeural","--text",sc["section"]+". "+sc["title"]+". "+sc.get("body",""),"--write-media",str(audio)],check=True)
+   spoken=". ".join(x.strip(" .،؛") for x in [sc["section"],sc["title"],sc.get("body","")] if x and x.strip())
+   narration(spoken+".",audio)
    clip=tmp/f"clip{i:02d}.mp4"
    subprocess.run(["ffmpeg","-y","-loglevel","error","-loop","1","-i",str(pic),"-i",str(audio),"-vf","scale=1080:1920,format=yuv420p","-c:v","libx264","-preset","veryfast","-tune","stillimage","-c:a","aac","-b:a","128k","-shortest","-movflags","+faststart",str(clip)],check=True)
    clips.append(clip)
