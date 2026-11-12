@@ -122,15 +122,15 @@ def main():
    clip=tmp/f"clip{i:02d}.mp4"
    subprocess.run(["ffmpeg","-y","-loglevel","error","-loop","1","-i",str(pic),"-i",str(audio),"-vf","scale=1080:1920,format=yuv420p","-c:v","libx264","-preset","veryfast","-tune","stillimage","-c:a","aac","-b:a","128k","-shortest","-movflags","+faststart",str(clip)],check=True)
    clips.append(clip)
-  listing=tmp/"concat.txt"; listing.write_text("".join("file '"+str(p)+"'\\n" for p in clips),encoding="utf-8")
+  listing=tmp/"concat.txt"; listing.write_text("".join("file '"+str(p)+"'\n" for p in clips),encoding="utf-8")
   final=OUT/"netman-persian-news.mp4"
   subprocess.run(["ffmpeg","-y","-loglevel","error","-f","concat","-safe","0","-i",str(listing),"-c","copy","-movflags","+faststart",str(final)],check=True)
- (OUT/"sources.txt").write_text("\\n".join(x["link"] for x in crypto+iran+fx),encoding="utf-8")
+ (OUT/"sources.txt").write_text("\n".join(x["link"] for x in crypto+iran+fx),encoding="utf-8")
  print("VIDEO_READY",final); print("SCENES",len(scenes)); print("SIZE_BYTES",final.stat().st_size)
  token=os.getenv("TELEGRAM_BOT_TOKEN"); chat=os.getenv("TELEGRAM_CHAT_ID") or "-1001523446411"
  if token:
   with final.open("rb") as f:
-   r=S.post(f"https://api.telegram.org/bot{token}/sendVideo",data={"chat_id":chat,"caption":f"گزارش ویدئویی نت‌من | {now}\\nکریپتو، دلار آزاد و خبرهای ایران","supports_streaming":"true"},files={"video":("netman-persian-news.mp4",f,"video/mp4")},timeout=240)
+   r=S.post(f"https://api.telegram.org/bot{token}/sendVideo",data={"chat_id":chat,"caption":f"گزارش ویدئویی نت‌من | {now}\nکریپتو، دلار آزاد و خبرهای ایران","supports_streaming":"true"},files={"video":("netman-persian-news.mp4",f,"video/mp4")},timeout=240)
   r.raise_for_status()
   if not r.json().get("ok"): raise RuntimeError(r.text[:500])
   print("TELEGRAM_SENT=true")
